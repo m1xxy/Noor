@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Suleman Plaza Kitchen — iOS Food &amp; Ice Cream App</title>
+
+  <!-- Required Libraries -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'Inter', 'Segoe UI', 'Roboto', 'sans-serif'],
+          },
+          colors: {
+            ios: {
+              bg: '#F2F2F7',
+              card: '#FFFFFF',
+              red: '#FF3B30',
+              crimson: '#D70015',
+              green: '#25D366',
+              blue: '#007AFF',
+              orange: '#FF9500',
+              gray: '#8E8E93',
+              light: '#E5E5EA',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --ios-bg: #F2F2F7;
+      --ios-glass: rgba(255, 255, 255, 0.78);
+      --ios-dark-glass: rgba(28, 28, 30, 0.86);
+      --ios-border: rgba(60, 60, 67, 0.1);
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--ios-bg);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      background-color: var(--ios-bg);
+      color: #1C1C1E;
+      overflow-x: hidden;
+      padding-bottom: 92px;
+    }
+
+    /* iOS Frosted Glass */
+    .ios-glass {
+      background: var(--ios-glass);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 0.5px solid var(--ios-border);
+    }
+
+    .ios-dock-glass {
+      background: rgba(249, 249, 251, 0.86);
+      backdrop-filter: saturate(180%) blur(24px);
+      -webkit-backdrop-filter: saturate(180%) blur(24px);
+      border: 0.5px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
+    }
+
+    /* iOS Squircle & Card Styling */
+    .ios-card {
+      background: #FFFFFF;
+      border-radius: 22px;
+      border: 0.5px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 14px rgba(0, 0, 0, 0.04);
+      transition: transform 0.22s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.22s ease;
+    }
+
+    @media (hover: hover) {
+      .ios-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    .ios-card:active {
+      transform: scale(0.98);
+    }
+
+    .ios-btn {
+      transition: transform 0.16s ease, opacity 0.16s ease;
+    }
+    .ios-btn:active {
+      transform: scale(0.95);
+      opacity: 0.85;
+    }
+
+    /* Hide scrollbars cleanly on horizontal category rails */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Dynamic Island Animation */
+    .dynamic-island {
+      transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease;
+    }
+
+    /* Modal Sheet Backdrop */
+    .ios-sheet-backdrop {
+      background: rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    /* Three.js Canvas */
+    #hero-three-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-red-500 selection:text-white">
+
+  <!-- iOS Top Status & Dynamic Island Bar -->
+  <header class="sticky top-0 z-40 ios-glass">
+    <div class="max-w-6xl mx-auto px-4 pt-2 pb-3">
+      <!-- Simulated iOS Status Strip + Dynamic Island -->
+      <div class="flex items-center justify-between text-[11px] font-semibold text-gray-800 mb-2">
+        <span id="live-clock" class="tracking-tight w-16">9:41</span>
+        
+        <!-- Dynamic Island Pill -->
+        <button onclick="openCartSheet()" id="dynamic-island" class="dynamic-island flex items-center justify-center gap-2 bg-black text-white px-3.5 py-1 rounded-full shadow-md text-[11px] font-medium cursor-pointer">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="island-text">Open • Delivery Active</span>
+        </button>
+
+        <div class="flex items-center gap-1.5 w-16 justify-end text-gray-700">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3C6.95 3 3.15 4.85 0 7.23L12 22 24 7.25C20.85 4.87 17.05 3 12 3z"/></svg>
+          <span class="text-[10px] font-bold">5G</span>
+        </div>
+      </div>
+
+      <!-- App Title + Quick Cart + Search -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-[13px] bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center text-white text-xl shadow-sm">
+              🍛
+            </div>
+            <div>
+              <h1 class="text-lg font-bold tracking-tight leading-tight text-gray-900">Suleman Plaza Kitchen</h1>
+              <p class="text-[11px] text-gray-500 font-medium">Block-10, Gulshan-e-Iqbal • <a href="tel:02134827322" class="text-red-600 font-semibold">021-34827322</a></p>
+            </div>
+          </div>
+
+          <!-- Mobile Bag Button -->
+          <button onclick="openCartSheet()" class="sm:hidden relative flex items-center gap-1.5 bg-gray-900 text-white px-3.5 py-2 rounded-full text-xs font-semibold ios-btn">
+            <span>🛍️ Bag</span>
+            <span id="cart-badge-mobile" class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">0</span>
+          </button>
+        </div>
+
+        <!-- iOS Spotlight Search Bar + Desktop Bag -->
+        <div class="flex items-center gap-2.5 flex-1 sm:max-w-md justify-end">
+          <div class="relative flex-1">
+            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z"/></svg>
+            <input id="search-input" type="search" placeholder="Search Biryani, Karahi, Faluda, Ice Cream..." 
+              class="w-full bg-gray-200/75 focus:bg-white text-sm pl-9 pr-8 py-2 rounded-[14px] outline-none border border-transparent focus:border-red-300 transition-all placeholder:text-gray-500" />
+            <button id="clear-search" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs font-bold">✕</button>
+          </div>
+
+          <button onclick="openCartSheet()" class="hidden sm:flex items-center gap-2 bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-[14px] text-xs font-semibold ios-btn shadow-sm">
+            <span>🛍️ My Order</span>
+            <span id="cart-badge-desktop" class="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Horizontal Quick Category Pills -->
+      <div id="category-pills" class="flex items-center gap-2 overflow-x-auto no-scrollbar pt-3 pb-0.5">
+        <!-- Populated dynamically via JS -->
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN VERTICAL APP CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 pt-5 space-y-8">
+
+    <!-- SECTION 1: iOS TODAY HERO + THREE.JS 3D CULINARY STAGE -->
+    <section id="hero-section" class="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#9E0B15] via-[#C8102E] to-[#4A040A] text-white shadow-xl">
+      <div class="grid grid-cols-1 lg:grid-cols-12 items-center min-h-[340px]">
+        <!-- Left Copy -->
+        <div class="lg:col-span-7 p-6 sm:p-10 z-10 space-y-4">
+          <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold tracking-wide">
+            <span class="w-2 h-2 rounded-full bg-green-400"></span>
+            HOME DELIVERY • KARACHI
+          </div>
+          <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.08]">
+            Authentic Desi, Chinese, BBQ &amp; Faluda Bar.
+          </h2>
+          <p class="text-sm sm:text-base text-red-100/90 max-w-xl leading-relaxed">
+            Tap any dish to customize portions, spice notes, or scoops—and checkout directly on WhatsApp in one tap.
+          </p>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex flex-wrap items-center gap-3 pt-1">
+            <a href="#menu-sections" class="ios-btn bg-white text-red-700 font-bold text-sm px-5 py-3 rounded-[16px] shadow-md flex items-center gap-2">
+              <span>🍽️ Browse Full Menu</span>
+            </a>
+            <button onclick="quickWhatsAppInquiry()" class="ios-btn bg-[#25D366] text-white font-bold text-sm px-5 py-3 rounded-[16px] shadow-md flex items-center gap-2">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.031 2c-5.516 0-9.969 4.453-9.969 9.969 0 1.766.469 3.484 1.344 5l-1.406 5.156 5.281-1.375c1.469.797 3.109 1.219 4.75 1.219 5.516 0 9.969-4.453 9.969-9.969S17.547 2 12.031 2zm5.813 14.125c-.25.703-1.438 1.344-1.969 1.422-.516.078-1.156.109-1.875-.125-.438-.141-1-.328-1.719-.641-3.031-1.313-5-4.375-5.156-4.578-.156-.203-1.234-1.641-1.234-3.125s.781-2.219 1.063-2.516c.281-.297.609-.375.813-.375h.594c.188 0 .438-.078.688.531.25.609.859 2.094.938 2.25.078.156.125.344.016.547-.109.203-.156.328-.313.516-.156.188-.328.406-.469.547-.156.156-.313.328-.141.641.172.313.781 1.297 1.672 2.094 1.156 1.031 2.125 1.344 2.438 1.5.313.156.5.125.688-.078.188-.203.781-.906.984-1.219.203-.313.422-.266.703-.156.281.109 1.797.844 2.109 1 .313.156.516.234.594.359.078.125.078.734-.172 1.438z"/></svg>
+              <span>WhatsApp Order Desk</span>
+            </button>
+          </div>
+
+          <!-- iOS Widget Stats -->
+          <div class="grid grid-cols-3 gap-2.5 pt-2 max-w-md">
+            <div class="bg-white/10 backdrop-blur-md rounded-[16px] p-2.5 text-center border border-white/10">
+              <div class="text-lg font-extrabold">22+</div>
+              <div class="text-[10px] text-red-100 uppercase tracking-wider">Categories</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md rounded-[16px] p-2.5 text-center border border-white/10">
+              <div class="text-lg font-extrabold" id="total-dishes-count">180+</div>
+              <div class="text-[10px] text-red-100 uppercase tracking-wider">Fresh Dishes</div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md rounded-[16px] p-2.5 text-center border border-white/10">
+              <div class="text-lg font-extrabold">35m</div>
+              <div class="text-[10px] text-red-100 uppercase tracking-wider">Avg Delivery</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Three.js 3D Interactive Scene -->
+        <div class="lg:col-span-5 relative h-[230px] sm:h-[300px] lg:h-[360px] flex items-center justify-center">
+          <canvas id="hero-three-canvas"></canvas>
+          <div class="absolute bottom-4 right-4 bg-black/35 backdrop-blur-md text-[10px] font-medium px-3 py-1 rounded-full text-white/90 pointer-events-none">
+            ✨ Interactive 3D Platter • Drag or Hover
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: iOS APP DIRECTORY / CATEGORY LAUNCHPAD -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-gray-900">Explore Categories</h2>
+          <p class="text-xs text-gray-500">Tap any category widget to jump straight to its dishes</p>
+        </div>
+        <button onclick="filterByCategory('ALL')" class="text-xs font-semibold text-red-600 hover:underline">Show All</button>
+      </div>
+
+      <div id="category-widgets" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5">
+        <!-- Populated dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 3: ADDED EXTRA SECTION — CHEF'S SPECIAL DEALS & COMBO BOXES -->
+    <section id="special-deals-section" class="space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="bg-amber-500 text-white text-xs font-extrabold px-2.5 py-1 rounded-full">NEW</span>
+          <div>
+            <h2 class="text-xl font-bold tracking-tight text-gray-900">Chef's Special Deals &amp; Combos</h2>
+            <p class="text-xs text-gray-500">Value meal boxes curated for instant WhatsApp ordering</p>
+          </div>
+        </div>
+      </div>
+      <div id="deals-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <!-- Populated dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 4: ALL MENU CATEGORIES STACKED VERTICALLY -->
+    <section id="menu-sections" class="space-y-9">
+      <!-- Populated dynamically via JS with every single bold category & product -->
+    </section>
+
+    <!-- Empty Search State -->
+    <div id="empty-search-state" class="hidden ios-card p-10 text-center space-y-3">
+      <div class="text-4xl">🔍</div>
+      <h3 class="text-lg font-bold text-gray-900">No dishes found</h3>
+      <p class="text-sm text-gray-500">Try searching for "Biryani", "Zinger", "Karahi", "Faluda", or "Ice Cream".</p>
+      <button onclick="clearSearch()" class="ios-btn bg-red-600 text-white text-sm font-semibold px-5 py-2.5 rounded-[14px]">Reset Search</button>
+    </div>
+
+    <!-- SECTION 5: ADDED EXTRA SECTION — STORE LOCATION, HOME DELIVERY & WHATSAPP HUB -->
+    <section id="location-section" class="ios-card p-6 sm:p-8 bg-gradient-to-br from-white to-gray-50">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div class="space-y-3">
+          <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-red-600 bg-red-50 px-3 py-1 rounded-full">
+            📍 Home Delivery &amp; Takeaway
+          </span>
+          <h2 class="text-2xl font-extrabold tracking-tight text-gray-900">Visit Suleman Plaza Kitchen</h2>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            <strong>Address:</strong> Shop No. 1-2, Suleman Plaza, Block-10, Gulshan-e-Iqbal, Karachi.<br />
+            <strong>Phone:</strong> <a href="tel:02134827322" class="text-red-600 font-semibold underline">021-34827322</a><br />
+            <strong>Fresh Guarantee:</strong> Hot Tandoor Naan, Live Biryani &amp; Fresh Cold Faluda delivered straight to your doorstep.
+          </p>
+          <div class="flex flex-wrap gap-2.5 pt-2">
+            <button onclick="quickWhatsAppInquiry()" class="ios-btn bg-[#25D366] text-white text-sm font-bold px-5 py-3 rounded-[16px] shadow-sm flex items-center gap-2">
+              <span>💬 Chat on WhatsApp</span>
+            </button>
+            <a href="tel:02134827322" class="ios-btn bg-gray-900 text-white text-sm font-bold px-5 py-3 rounded-[16px] shadow-sm flex items-center gap-2">
+              <span>📞 Call 021-34827322</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="rounded-[22px] bg-gray-900 text-white p-5 space-y-3 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-gray-400">WHATSAPP RECEIPT SETTINGS</span>
+            <span class="text-xs text-emerald-400 font-bold">● Ready</span>
+          </div>
+          <p class="text-xs text-gray-300 leading-relaxed">
+            Orders are formatted automatically and sent to our WhatsApp order desk. You can also customize the recipient WhatsApp number below if testing:
+          </p>
+          <div class="flex items-center gap-2">
+            <input id="wa-number-input" type="tel" value="923003482732" 
+              class="flex-1 bg-white/10 border border-white/15 rounded-[12px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-emerald-400" 
+              placeholder="e.g. 923001234567" />
+            <button onclick="saveWhatsAppNumber()" class="ios-btn bg-emerald-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-[12px]">Save</button>
+          </div>
+          <p class="text-[11px] text-gray-400">Format: Country code + number without + (e.g. 923003482732)</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- iOS BOTTOM FLOATING DOCK -->
+  <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-md ios-dock-glass rounded-[26px] px-3 py-2 flex items-center justify-around">
+    <a href="#hero-section" onclick="filterByCategory('ALL')" class="flex flex-col items-center gap-0.5 px-3 py-1 text-gray-700 hover:text-red-600">
+      <span class="text-lg">🏠</span>
+      <span class="text-[10px] font-semibold">Home</span>
+    </a>
+    <a href="#special-deals-section" class="flex flex-col items-center gap-0.5 px-3 py-1 text-gray-700 hover:text-red-600">
+      <span class="text-lg">🔥</span>
+      <span class="text-[10px] font-semibold">Deals</span>
+    </a>
+    <a href="#menu-sections" class="flex flex-col items-center gap-0.5 px-3 py-1 text-gray-700 hover:text-red-600">
+      <span class="text-lg">📖</span>
+      <span class="text-[10px] font-semibold">Menu</span>
+    </a>
+    <a href="#location-section" class="flex flex-col items-center gap-0.5 px-3 py-1 text-gray-700 hover:text-red-600">
+      <span class="text-lg">📍</span>
+      <span class="text-[10px] font-semibold">Visit</span>
+    </a>
+    <button onclick="openCartSheet()" class="relative flex flex-col items-center gap-0.5 px-3 py-1 text-red-600">
+      <span class="text-lg">🛍️</span>
+      <span class="text-[10px] font-bold">Order</span>
+      <span id="cart-badge-dock" class="absolute -top-0.5 right-1 bg-red-600 text-white text-[9px] font-bold px-1.5 rounded-full">0</span>
+    </button>
+  </nav>
+
+  <!-- PRODUCT DETAIL PAGE (iOS FULL SHEET MODAL) -->
+  <div id="product-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center ios-sheet-backdrop p-0 sm:p-4">
+    <div id="product-modal-card" class="bg-white w-full sm:max-w-lg rounded-t-[30px] sm:rounded-[30px] max-h-[92vh] overflow-y-auto shadow-2xl relative">
+      <!-- iOS Grabber Bar -->
+      <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-5 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
+        <div class="w-8"></div>
+        <div class="w-10 h-1.5 bg-gray-300 rounded-full sm:hidden"></div>
+        <span id="pm-category-badge" class="text-[11px] font-bold uppercase tracking-wider text-red-600 bg-red-50 px-3 py-1 rounded-full">Category</span>
+        <button onclick="closeProductModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm">✕</button>
+      </div>
+
+      <!-- Product Visual Banner -->
+      <div id="pm-banner" class="mx-5 mt-4 rounded-[22px] p-6 text-white flex items-center justify-between shadow-inner">
+        <div class="space-y-1">
+          <span class="text-[11px] font-semibold uppercase tracking-wider opacity-85">Freshly Prepared</span>
+          <h3 id="pm-title" class="text-2xl font-extrabold leading-tight">Dish Name</h3>
+          <p id="pm-price-display" class="text-lg font-bold text-white/95">Rs. 500</p>
+        </div>
+        <div id="pm-emoji" class="text-5xl sm:text-6xl drop-shadow-md">🍛</div>
+      </div>
+
+      <!-- Product Details Body -->
+      <div class="p-5 space-y-5">
+        <p id="pm-desc" class="text-sm text-gray-600 leading-relaxed">
+          Prepared fresh to order at Suleman Plaza Kitchen using signature spices and quality ingredients.
+        </p>
+
+        <!-- Variant Selector (if applicable) -->
+        <div id="pm-variants-wrap" class="hidden space-y-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Select Portion / Size</label>
+          <div id="pm-variants" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+        </div>
+
+        <!-- Add-on Notes -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Special Instructions (Optional)</label>
+          <input id="pm-notes" type="text" placeholder="e.g., Less spicy, extra garlic mayo, well done..." 
+            class="w-full bg-gray-100 focus:bg-white border border-transparent focus:border-red-300 rounded-[14px] px-3.5 py-2.5 text-sm outline-none" />
+        </div>
+
+        <!-- Quantity Stepper -->
+        <div class="flex items-center justify-between bg-gray-50 rounded-[18px] p-3 border border-gray-100">
+          <span class="text-sm font-bold text-gray-800">Quantity</span>
+          <div class="flex items-center gap-4">
+            <button onclick="changeModalQty(-1)" class="w-9 h-9 rounded-full bg-white shadow-sm border border-gray-200 font-bold text-lg flex items-center justify-center ios-btn">−</button>
+            <span id="pm-qty" class="text-base font-extrabold w-5 text-center">1</span>
+            <button onclick="changeModalQty(1)" class="w-9 h-9 rounded-full bg-gray-900 text-white shadow-sm font-bold text-lg flex items-center justify-center ios-btn">+</button>
+          </div>
+        </div>
+
+        <!-- Product Page Dual Actions: Add to Bag & Direct WhatsApp Buy -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <button onclick="addModalItemToCart()" class="ios-btn w-full bg-gray-900 hover:bg-black text-white font-bold text-sm py-3.5 px-4 rounded-[16px] flex items-center justify-center gap-2 shadow-sm">
+            <span>🛍️ Add to Bag</span>
+            <span id="pm-add-total" class="text-xs opacity-80"></span>
+          </button>
+
+          <button onclick="buyModalItemOnWhatsApp()" class="ios-btn w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm py-3.5 px-4 rounded-[16px] flex items-center justify-center gap-2 shadow-md">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12.031 2c-5.516 0-9.969 4.453-9.969 9.969 0 1.766.469 3.484 1.344 5l-1.406 5.156 5.281-1.375c1.469.797 3.109 1.219 4.75 1.219 5.516 0 9.969-4.453 9.969-9.969S17.547 2 12.031 2zm5.813 14.125c-.25.703-1.438 1.344-1.969 1.422-.516.078-1.156.109-1.875-.125-.438-.141-1-.328-1.719-.641-3.031-1.313-5-4.375-5.156-4.578-.156-.203-1.234-1.641-1.234-3.125s.781-2.219 1.063-2.516c.281-.297.609-.375.813-.375h.594c.188 0 .438-.078.688.531.25.609.859 2.094.938 2.25.078.156.125.344.016.547-.109.203-.156.328-.313.516-.156.188-.328.406-.469.547-.156.156-.313.328-.141.641.172.313.781 1.297 1.672 2.094 1.156 1.031 2.125 1.344 2.438 1.5.313.156.5.125.688-.078.188-.203.781-.906.984-1.219.203-.313.422-.266.703-.156.281.109 1.797.844 2.109 1 .313.156.516.234.594.359.078.125.078.734-.172 1.438z"/></svg>
+            <span>Buy on WhatsApp</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CART / ORDER SHEET MODAL -->
+  <div id="cart-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center ios-sheet-backdrop p-0 sm:p-4">
+    <div id="cart-modal-card" class="bg-[#F2F2F7] w-full sm:max-w-lg rounded-t-[30px] sm:rounded-[30px] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Header -->
+      <div class="bg-white px-5 py-4 flex items-center justify-between border-b border-gray-200/70">
+        <div>
+          <h3 class="text-lg font-extrabold text-gray-900">Your Order Bag</h3>
+          <p class="text-xs text-gray-500">Suleman Plaza Kitchen • Home Delivery</p>
+        </div>
+        <button onclick="closeCartSheet()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm">✕</button>
+      </div>
+
+      <!-- Cart Items Scrollable Area -->
+      <div class="p-4 overflow-y-auto flex-1 space-y-4">
+        <div id="cart-items-list" class="space-y-2.5">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Customer Delivery Details -->
+        <div id="cart-customer-form" class="bg-white rounded-[20px] p-4 space-y-3 border border-gray-100">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500">Delivery Details</h4>
+          <input id="cust-name" type="text" placeholder="Your Full Name" class="w-full bg-gray-100 rounded-[12px] px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-red-200" />
+          <input id="cust-phone" type="tel" placeholder="Your Mobile Number (e.g. 0300-1234567)" class="w-full bg-gray-100 rounded-[12px] px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-red-200" />
+          <textarea id="cust-address" rows="2" placeholder="Delivery Address (Block, House No, Landmark)" class="w-full bg-gray-100 rounded-[12px] px-3.5 py-2.5 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-red-200"></textarea>
+        </div>
+      </div>
+
+      <!-- Footer Checkout -->
+      <div class="bg-white px-5 py-4 border-t border-gray-200/70 space-y-3">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-500 font-medium">Estimated Total</span>
+          <span id="cart-total-price" class="text-xl font-extrabold text-gray-900">Rs. 0</span>
+        </div>
+        <p id="cart-rate-note" class="hidden text-[11px] text-amber-600 font-medium">
+          * Some selected items (e.g. Chicken Roll) will have final rate confirmed on WhatsApp.
+        </p>
+        <div class="flex items-center gap-2.5">
+          <button onclick="clearCart()" class="ios-btn bg-gray-100 text-gray-700 font-semibold text-xs px-4 py-3.5 rounded-[16px]">Clear</button>
+          <button onclick="checkoutViaWhatsApp()" class="ios-btn flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm py-3.5 px-5 rounded-[16px] shadow-md flex items-center justify-center gap-2">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.031 2c-5.516 0-9.969 4.453-9.969 9.969 0 1.766.469 3.484 1.344 5l-1.406 5.156 5.281-1.375c1.469.797 3.109 1.219 4.75 1.219 5.516 0 9.969-4.453 9.969-9.969S17.547 2 12.031 2zm5.813 14.125c-.25.703-1.438 1.344-1.969 1.422-.516.078-1.156.109-1.875-.125-.438-.141-1-.328-1.719-.641-3.031-1.313-5-4.375-5.156-4.578-.156-.203-1.234-1.641-1.234-3.125s.781-2.219 1.063-2.516c.281-.297.609-.375.813-.375h.594c.188 0 .438-.078.688.531.25.609.859 2.094.938 2.25.078.156.125.344.016.547-.109.203-.156.328-.313.516-.156.188-.328.406-.469.547-.156.156-.313.328-.141.641.172.313.781 1.297 1.672 2.094 1.156 1.031 2.125 1.344 2.438 1.5.313.156.5.125.688-.078.188-.203.781-.906.984-1.219.203-.313.422-.266.703-.156.281.109 1.797.844 2.109 1 .313.156.516.234.594.359.078.125.078.734-.172 1.438z"/></svg>
+            <span>Buy &amp; Order on WhatsApp</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- iOS Notification Toast -->
+  <div id="ios-toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-[60] pointer-events-none opacity-0 transition-all duration-300 bg-gray-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-full shadow-xl text-xs font-semibold flex items-center gap-2">
+    <span id="toast-icon">✅</span>
+    <span id="toast-msg">Added to bag</span>
+  </div>
+
+  <!-- COMPLETE MENU DATABASE & APP ENGINE -->
+  <script>
+    // =========================================================================
+    // 1. MENU DATABASE (100% extracted from all 5 menu images + Chef's Combos)
+    // =========================================================================
+    const CATEGORY_META = [
+      { id: 'chinese', name: 'CHINESE', icon: '🥡', gradient: 'from-red-600 to-orange-600', badge: 'Wok Special' },
+      { id: 'chinese-rice', name: 'CHINESE RICE', icon: '🍚', gradient: 'from-amber-500 to-orange-600', badge: 'Fried Rice' },
+      { id: 'chinese-soup', name: 'CHINESE SOUP', icon: '🍲', gradient: 'from-yellow-500 to-amber-600', badge: 'Hot Bowls' },
+      { id: 'fast-food', name: 'FAST FOOD', icon: '🍔', gradient: 'from-orange-500 to-red-600', badge: 'Broast & Burgers' },
+      { id: 'sandwiches', name: 'SANDWICHES', icon: '🥪', gradient: 'from-amber-500 to-yellow-600', badge: 'Club & BBQ' },
+      { id: 'chicken-handi', name: 'CHICKEN HANDI', icon: '🥘', gradient: 'from-rose-600 to-red-700', badge: 'Half 2 Persons' },
+      { id: 'karahi', name: 'KARAHI', icon: '🫕', gradient: 'from-red-700 to-rose-900', badge: 'Half & Full' },
+      { id: 'bbq', name: 'B.B.Q', icon: '🔥', gradient: 'from-orange-600 to-red-800', badge: 'Charcoal Grill' },
+      { id: 'chicken-roll', name: 'CHICKEN ROLL', icon: '🌯', gradient: 'from-amber-600 to-red-600', badge: 'Paratha Rolls' },
+      { id: 'biryani-pulao', name: 'BIRYANI / PULAO', icon: '🍛', gradient: 'from-yellow-600 to-red-600', badge: 'Karachi Classic' },
+      { id: 'live-biryani', name: 'LIVE BIRYANI & PULAO', icon: '♨️', gradient: 'from-rose-600 to-amber-700', badge: '1 KG Fresh Deg' },
+      { id: 'beef-roll', name: 'BEEF ROLL', icon: '🥩', gradient: 'from-red-700 to-stone-800', badge: 'Beef Paratha' },
+      { id: 'family-platters', name: 'FAMILY PLATTERS', icon: '🍽️', gradient: 'from-purple-600 to-red-600', badge: 'Feast Boxes' },
+      { id: 'beverages', name: 'BEVERAGES', icon: '🥤', gradient: 'from-sky-500 to-blue-700', badge: 'Chilled Drinks' },
+      { id: 'tandoor', name: 'TANDOOR', icon: '🫓', gradient: 'from-amber-600 to-yellow-700', badge: 'Fresh Clay Oven' },
+      { id: 'salad-raita', name: 'SALAD / RAITA', icon: '🥗', gradient: 'from-emerald-500 to-teal-700', badge: 'Fresh Sides' },
+      { id: 'fresh-juice', name: 'FRESH JUICE', icon: '🧃', gradient: 'from-orange-400 to-pink-600', badge: '100% Pure' },
+      { id: 'milk-shake', name: 'MILK SHAKE', icon: '🥤', gradient: 'from-pink-500 to-purple-600', badge: 'Creamy Thick' },
+      { id: 'faluda', name: 'FALUDA', icon: '🍨', gradient: 'from-rose-500 to-pink-700', badge: 'House Special' },
+      { id: 'special-chaat', name: 'SPECIAL CHAAT', icon: '🥣', gradient: 'from-teal-500 to-emerald-700', badge: 'Tangy Street' },
+      { id: 'ice-cream', name: 'ICE CREAM', icon: '🍦', gradient: 'from-indigo-500 to-pink-500', badge: 'Scoops & Tubs' },
+    ];
+
+    const MENU_ITEMS = [
+      // 1. CHINESE
+      { id: 'ch1', cat: 'chinese', name: 'Chk/Shashlik with fried Rice', price: 999 },
+      { id: 'ch2', cat: 'chinese', name: 'Chicken Chilli Vegetable with fried Rice', price: 999 },
+      { id: 'ch3', cat: 'chinese', name: 'Chicken Chilli Dry with fried Rice', price: 999 },
+      { id: 'ch4', cat: 'chinese', name: 'Beef Chilli Dry with fried Rice', price: 999 },
+      { id: 'ch5', cat: 'chinese', name: 'Chicken Manchorian with fried Rice', price: 999 },
+      { id: 'ch6', cat: 'chinese', name: 'Shezwan Chicken with fried Rice', price: 999 },
+      { id: 'ch7', cat: 'chinese', name: 'Singaporian Rice', price: 849 },
+      { id: 'ch8', cat: 'chinese', name: 'Beef Chowmein', price: 990 },
+      { id: 'ch9', cat: 'chinese', name: 'Chicken Chowmein', price: 749 },
+
+      // 2. CHINESE RICE
+      { id: 'cr1', cat: 'chinese-rice', name: 'Egg Fried Rice', price: 599 },
+      { id: 'cr2', cat: 'chinese-rice', name: 'Vegetable Rice', price: 599 },
+      { id: 'cr3', cat: 'chinese-rice', name: 'Chicken Fried Rice', price: 699 },
+      { id: 'cr4', cat: 'chinese-rice', name: 'Chicken Masala Rice', price: 699 },
+
+      // 3. CHINESE SOUP
+      { id: 'cs1', cat: 'chinese-soup', name: 'Chicken Corn Soup', price: 220 },
+      { id: 'cs2', cat: 'chinese-soup', name: 'Hot & Sour Soup', price: 250 },
+      { id: 'cs3', cat: 'chinese-soup', name: 'Vegetable Soup', price: 200 },
+
+      // 4. FAST FOOD (Broast, Fries & Burgers)
+      { id: 'ff1', cat: 'fast-food', name: 'Chk. Injected Broast Qtr Leg', price: 600 },
+      { id: 'ff2', cat: 'fast-food', name: 'Chk. Injected Broast Qtr Chest', price: 680 },
+      { id: 'ff3', cat: 'fast-food', name: 'Chk. Broast Qtr Leg', price: 550 },
+      { id: 'ff4', cat: 'fast-food', name: 'Chk. Broast Qtr Chest', price: 600 },
+      { id: 'ff5', cat: 'fast-food', name: 'Chicken Cheese Broast Qtr', price: 670 },
+      { id: 'ff6', cat: 'fast-food', name: 'Chicken Masala Broast Qtr', price: 640 },
+      { id: 'ff7', cat: 'fast-food', name: 'Chicken Garlic Mayo Broast', price: 650 },
+      { id: 'ff8', cat: 'fast-food', name: 'Plain Fries', price: 240 },
+      { id: 'ff9', cat: 'fast-food', name: 'Mayo Fries', price: 280 },
+      { id: 'ff10', cat: 'fast-food', name: 'Cheese Fries', price: 320 },
+      { id: 'ff11', cat: 'fast-food', name: 'Chicken Zinger Burger', price: 520 },
+      { id: 'ff12', cat: 'fast-food', name: 'Chicken Zinger Burger with Cheese', price: 520 },
+      { id: 'ff13', cat: 'fast-food', name: 'Chicken Burger', price: 470 },
+      { id: 'ff14', cat: 'fast-food', name: 'Beef Burger', price: 520 },
+      { id: 'ff15', cat: 'fast-food', name: 'Beef Burger with Cheese', price: 600 },
+      { id: 'ff16', cat: 'fast-food', name: 'Chicken Cheese Burger', price: 550 },
+
+      // 5. SANDWICHES
+      { id: 'sw1', cat: 'sandwiches', name: 'Club Sandwiches', price: 580 },
+      { id: 'sw2', cat: 'sandwiches', name: 'Chicken Sandwiches', price: 550 },
+      { id: 'sw3', cat: 'sandwiches', name: 'Chicken Tikka Sandwiches', price: 650 },
+      { id: 'sw4', cat: 'sandwiches', name: 'Bar B.Q Club Sandwiches', price: 650 },
+
+      // 6. CHICKEN HANDI (Half 2 Person Servings)
+      { id: 'hd1', cat: 'chicken-handi', name: 'Chicken Handi', price: 1500, desc: 'Half (2 Person Serving) creamy clay-pot chicken handi.' },
+      { id: 'hd2', cat: 'chicken-handi', name: 'Chicken Makhni Handi', price: 1650, desc: 'Half (2 Person Serving) rich butter & tomato makhni handi.' },
+      { id: 'hd3', cat: 'chicken-handi', name: 'Chicken Achari Handi', price: 1550, desc: 'Half (2 Person Serving) tangy pickled spice chicken handi.' },
+      { id: 'hd4', cat: 'chicken-handi', name: 'Chicken White Handi', price: 1550, desc: 'Half (2 Person Serving) velvety white pepper & cream handi.' },
+      { id: 'hd5', cat: 'chicken-handi', name: 'Chicken Paneer Rashmi Handi', price: 1750, desc: 'Half (2 Person Serving) signature cheese & reshmi handi.' },
+
+      // 7. KARAHI (Half / Full)
+      { id: 'kr1', cat: 'karahi', name: 'Chicken Karahi', price: 1200, variants: [{ label: 'Half', price: 1200 }, { label: 'Full', price: 2300 }] },
+      { id: 'kr2', cat: 'karahi', name: 'Chicken Peshawari Karahi', price: 1200, variants: [{ label: 'Half', price: 1200 }, { label: 'Full', price: 2300 }] },
+      { id: 'kr3', cat: 'karahi', name: 'Chicken White Karahi', price: 1400, variants: [{ label: 'Half', price: 1400 }, { label: 'Full', price: 2700 }] },
+      { id: 'kr4', cat: 'karahi', name: 'Chicken Achari Karahi', price: 1400, variants: [{ label: 'Half', price: 1400 }, { label: 'Full', price: 2700 }] },
+
+      // 8. B.B.Q
+      { id: 'bq1', cat: 'bbq', name: 'Chk. Tikka Leg', price: 550 },
+      { id: 'bq2', cat: 'bbq', name: 'Chk. Tikka Chest', price: 600 },
+      { id: 'bq3', cat: 'bbq', name: 'Chicken Malai Tikka', price: 650 },
+      { id: 'bq4', cat: 'bbq', name: 'Chicken Green Tikka', price: 650 },
+      { id: 'bq5', cat: 'bbq', name: 'Chicken Behari Tikka', price: 650 },
+      { id: 'bq6', cat: 'bbq', name: 'Chicken Malai Boti Plate', price: 850 },
+      { id: 'bq7', cat: 'bbq', name: 'Chicken Boti Plate', price: 800 },
+      { id: 'bq8', cat: 'bbq', name: 'Beef Boti Plate', price: 850 },
+      { id: 'bq9', cat: 'bbq', name: 'Beef Behari Boti Plate', price: 850 },
+      { id: 'bq10', cat: 'bbq', name: 'Seekh Kabab Plate', price: 700 },
+      { id: 'bq11', cat: 'bbq', name: 'Chicken Reshmi Kabab Plate', price: 700 },
+      { id: 'bq12', cat: 'bbq', name: 'Chicken Malai Kabab Plate', price: 900 },
+      { id: 'bq13', cat: 'bbq', name: 'Dagha Kabab Plate', price: 700 },
+      { id: 'bq14', cat: 'bbq', name: 'Chk. Reshmi Gola Kabab Plate', price: 700 },
+      { id: 'bq15', cat: 'bbq', name: 'Beef Cheese Kabab Plate', price: 900 },
+      { id: 'bq16', cat: 'bbq', name: 'Chicken Behari Boti Plate', price: 750 },
+
+      // 9. CHICKEN ROLL (Rate confirmed via WhatsApp)
+      { id: 'ckr1', cat: 'chicken-roll', name: 'Shapatar Roll', price: null },
+      { id: 'ckr2', cat: 'chicken-roll', name: 'Chicken Crispy Roll', price: null },
+      { id: 'ckr3', cat: 'chicken-roll', name: 'Chicken Chatni Roll', price: null },
+      { id: 'ckr4', cat: 'chicken-roll', name: 'Chicken Garlic Roll', price: null },
+      { id: 'ckr5', cat: 'chicken-roll', name: 'Chicken Mayo Cheese Roll', price: null },
+      { id: 'ckr6', cat: 'chicken-roll', name: 'Chicken Chilli Garlic Roll', price: null },
+      { id: 'ckr7', cat: 'chicken-roll', name: 'Chicken Malai Chatni Roll', price: null },
+      { id: 'ckr8', cat: 'chicken-roll', name: 'Chicken Malai Garlic Roll', price: null },
+      { id: 'ckr9', cat: 'chicken-roll', name: 'Chicken Malai Cheese Roll', price: null },
+      { id: 'ckr10', cat: 'chicken-roll', name: 'Chk. Reshmi Kabab Roll', price: null },
+      { id: 'ckr11', cat: 'chicken-roll', name: 'Chk. Reshmi Kabab Garlic Mayo Roll', price: null },
+      { id: 'ckr12', cat: 'chicken-roll', name: 'Chk. Reshmi Kabab Cheese Roll', price: null },
+      { id: 'ckr13', cat: 'chicken-roll', name: 'Chicken Behari Kabab Chatni Roll', price: null },
+      { id: 'ckr14', cat: 'chicken-roll', name: 'Chicken Behari Mayo Roll', price: null },
+      { id: 'ckr15', cat: 'chicken-roll', name: 'Chicken Malai Behari Roll', price: null },
+      { id: 'ckr16', cat: 'chicken-roll', name: 'Chicken Malai Mayo Behari Roll', price: null },
+      { id: 'ckr17', cat: 'chicken-roll', name: 'Chicken Reshmi Behari Chatni Roll', price: null },
+      { id: 'ckr18', cat: 'chicken-roll', name: 'Chicken Reshmi Behari Mayo Roll', price: null },
+
+      // 10. BIRYANI / PULAO
+      { id: 'bp1', cat: 'biryani-pulao', name: 'Chicken Biryani Single', price: 350 },
+      { id: 'bp2', cat: 'biryani-pulao', name: 'Chicken Biryani Double', price: 680 },
+      { id: 'bp3', cat: 'biryani-pulao', name: 'Chicken Biryani 1 KG', price: 900 },
+      { id: 'bp4', cat: 'biryani-pulao', name: 'Beef Pulao Single', price: 500 },
+      { id: 'bp5', cat: 'biryani-pulao', name: 'Beef Pulao Double', price: 950 },
+      { id: 'bp6', cat: 'biryani-pulao', name: 'Beef Pulao 1 KG', price: 1150 },
+      { id: 'bp7', cat: 'biryani-pulao', name: 'Plain Pulao', price: 250 },
+      { id: 'bp8', cat: 'biryani-pulao', name: 'Potato Biryani', price: 250 },
+      { id: 'bp9', cat: 'biryani-pulao', name: 'Chicken Qorma', price: 350 },
+
+      // 11. LIVE BIRYANI & PULAO
+      { id: 'lb1', cat: 'live-biryani', name: 'Live Chicken Biryani 1 kg', price: 2600 },
+      { id: 'lb2', cat: 'live-biryani', name: 'Live Beef Pulao 1 kg', price: 4000 },
+
+      // 12. BEEF ROLL
+      { id: 'br1', cat: 'beef-roll', name: 'Beef Boti Roll', price: 380 },
+      { id: 'br2', cat: 'beef-roll', name: 'Beef Garlic Mayo Roll', price: 400 },
+      { id: 'br3', cat: 'beef-roll', name: 'Beef Boti Cheese Roll', price: 430 },
+      { id: 'br4', cat: 'beef-roll', name: 'Beef Boti Chilli Garlic Roll', price: 380 },
+      { id: 'br5', cat: 'beef-roll', name: 'Beef Kabab Chatni Roll', price: 400 },
+      { id: 'br6', cat: 'beef-roll', name: 'Beef Kabab Garlic Roll', price: 430 },
+      { id: 'br7', cat: 'beef-roll', name: 'Beef Kabab Cheese Roll', price: 430 },
+      { id: 'br8', cat: 'beef-roll', name: 'Beef Behari Chatni Roll', price: 380 },
+      { id: 'br9', cat: 'beef-roll', name: 'Beef Behari Mayo Roll', price: 400 },
+
+      // 13. FAMILY PLATTERS
+      { id: 'fp1', cat: 'family-platters', name: 'Family Platter 1', price: 2500, desc: 'Beef Yakhni Pulao, 1 Seekh Reshmi Kabab, 1 Seekh Kabab, 1 Seekh Malai Boti, 1 Leg Tikka, 1 Puri Paratha, Salad & Raita.' },
+      { id: 'fp2', cat: 'family-platters', name: 'Family Platter 2', price: 2800, desc: 'Fried Rice, Cheese Kabab, Chicken Gola Kabab, Beef Gola Kabab, Chicken Malai Boti, Chicken Namkeen Boti, 2 Small Paratha, Salad & Raita.' },
+
+      // 14. BEVERAGES
+      { id: 'bv1', cat: 'beverages', name: 'Mineral Water Large', price: 140 },
+      { id: 'bv2', cat: 'beverages', name: 'Mineral Water Small', price: 70 },
+      { id: 'bv3', cat: 'beverages', name: 'Soft Drink Can', price: 130 },
+      { id: 'bv4', cat: 'beverages', name: 'Soft Drink 345 ml', price: 100 },
+      { id: 'bv5', cat: 'beverages', name: 'Soft Drink 500 ml', price: 130 },
+      { id: 'bv6', cat: 'beverages', name: 'Soft Drink 1 Ltr', price: 190 },
+      { id: 'bv7', cat: 'beverages', name: 'Soft Drink 1.5 Ltr', price: 240 },
+      { id: 'bv8', cat: 'beverages', name: 'Sting 500 ml', price: 150 },
+      { id: 'bv9', cat: 'beverages', name: 'Sting 330 ml', price: 110 },
+
+      // 15. TANDOOR
+      { id: 'td1', cat: 'tandoor', name: 'Plain Naan', price: 35 },
+      { id: 'td2', cat: 'tandoor', name: 'Garlic Naan', price: 120 },
+      { id: 'td3', cat: 'tandoor', name: 'Roghni Naan', price: 120 },
+      { id: 'td4', cat: 'tandoor', name: 'Puri Paratha', price: 180 },
+      { id: 'td5', cat: 'tandoor', name: 'Kulcha', price: 60 },
+      { id: 'td6', cat: 'tandoor', name: 'Chapati', price: 35 },
+
+      // 16. SALAD / RAITA
+      { id: 'sr1', cat: 'salad-raita', name: 'Fresh Green Salad', price: 100 },
+      { id: 'sr2', cat: 'salad-raita', name: 'Large Raita', price: 150 },
+      { id: 'sr3', cat: 'salad-raita', name: 'Small Raita', price: 70 },
+
+      // 17. FRESH JUICE
+      { id: 'fj1', cat: 'fresh-juice', name: 'Apple Juice', price: 350 },
+      { id: 'fj2', cat: 'fresh-juice', name: 'Orange Juice', price: 350 },
+      { id: 'fj3', cat: 'fresh-juice', name: 'Grape Fruit Juice', price: 350 },
+      { id: 'fj4', cat: 'fresh-juice', name: 'Malta Juice', price: 350 },
+      { id: 'fj5', cat: 'fresh-juice', name: 'Mosambi Juice', price: 350 },
+      { id: 'fj6', cat: 'fresh-juice', name: 'Mitha Juice', price: 350 },
+      { id: 'fj7', cat: 'fresh-juice', name: 'Falsa Juice', price: 300 },
+      { id: 'fj8', cat: 'fresh-juice', name: 'Pineapple Juice', price: 350 },
+      { id: 'fj9', cat: 'fresh-juice', name: 'Cocktail Juice', price: 350 },
+      { id: 'fj10', cat: 'fresh-juice', name: 'Carrot Beetroot Juice', price: 330 },
+      { id: 'fj11', cat: 'fresh-juice', name: 'Pomegranate Juice', price: 450 },
+      { id: 'fj12', cat: 'fresh-juice', name: 'Peach Juice', price: 350 },
+
+      // 18. MILK SHAKE
+      { id: 'ms1', cat: 'milk-shake', name: 'Mango Shake', price: 350 },
+      { id: 'ms2', cat: 'milk-shake', name: 'Cheeko Shake', price: 350 },
+      { id: 'ms3', cat: 'milk-shake', name: 'Pineapple Shake', price: 330 },
+      { id: 'ms4', cat: 'milk-shake', name: 'Banana Shake', price: 250 },
+      { id: 'ms5', cat: 'milk-shake', name: 'Banana Dates Shake', price: 330 },
+      { id: 'ms6', cat: 'milk-shake', name: 'Strawberry Shake', price: 350 },
+      { id: 'ms7', cat: 'milk-shake', name: 'Pista Shake', price: 400 },
+      { id: 'ms8', cat: 'milk-shake', name: 'Badam Shake', price: 400 },
+      { id: 'ms9', cat: 'milk-shake', name: 'Kajoo Shake', price: 400 },
+      { id: 'ms10', cat: 'milk-shake', name: 'Cocktail Shake', price: 380 },
+      { id: 'ms11', cat: 'milk-shake', name: 'Oreo Shake', price: 400 },
+      { id: 'ms12', cat: 'milk-shake', name: 'Chocolate Shake', price: 350 },
+      { id: 'ms13', cat: 'milk-shake', name: 'Kitkat Shake', price: 400 },
+      { id: 'ms14', cat: 'milk-shake', name: 'Kulfa Shake', price: 350 },
+      { id: 'ms15', cat: 'milk-shake', name: 'Dates Shake', price: 330 },
+      { id: 'ms16', cat: 'milk-shake', name: 'Vanilla Shake', price: 350 },
+      { id: 'ms17', cat: 'milk-shake', name: 'Pinacolada Shake', price: 350 },
+      { id: 'ms18', cat: 'milk-shake', name: 'Cold Coffee Shake', price: 400 },
+      { id: 'ms19', cat: 'milk-shake', name: 'Ice Cream Shake', price: 400 },
+
+      // 19. FALUDA
+      { id: 'fl1', cat: 'faluda', name: 'Special Faluda', price: 350 },
+      { id: 'fl2', cat: 'faluda', name: 'Plain Faluda', price: 350 },
+      { id: 'fl3', cat: 'faluda', name: 'Special Faluda with Noodle', price: 380 },
+      { id: 'fl4', cat: 'faluda', name: 'Rabri Faluda', price: 480 },
+      { id: 'fl5', cat: 'faluda', name: 'Suprised Faluda', price: 480 },
+      { id: 'fl6', cat: 'faluda', name: 'Faluda with Kitkat', price: 530 },
+
+      // 20. SPECIAL CHAAT
+      { id: 'sc1', cat: 'special-chaat', name: 'Chana Chaat Plate', price: 200 },
+      { id: 'sc2', cat: 'special-chaat', name: 'Fruit Chaat Plate', price: 250 },
+      { id: 'sc3', cat: 'special-chaat', name: 'Gol Gappy Plate', price: 200 },
+
+      // 21. ICE CREAM
+      { id: 'ic1', cat: 'ice-cream', name: 'Peshawari Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic2', cat: 'ice-cream', name: 'Pista Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic3', cat: 'ice-cream', name: 'Mango Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic4', cat: 'ice-cream', name: 'Chocolate Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic5', cat: 'ice-cream', name: 'Pineapple Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic6', cat: 'ice-cream', name: 'Crunch Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic7', cat: 'ice-cream', name: 'Truti Fruti Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic8', cat: 'ice-cream', name: 'Vanilla Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic9', cat: 'ice-cream', name: 'Kulfa Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic10', cat: 'ice-cream', name: 'Strawberry Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic11', cat: 'ice-cream', name: 'Blueberry Ice Cream', price: 150, variants: [{ label: 'S. Scoop', price: 150 }, { label: 'Double', price: 220 }, { label: 'Triple', price: 300 }] },
+      { id: 'ic12', cat: 'ice-cream', name: 'Half Ltr. Ice Cream', price: 450 },
+      { id: 'ic13', cat: 'ice-cream', name: '1 Ltr. Ice Cream', price: 930 },
+    ];
+
+    // Extra Added Section: Chef's Special Deals
+    const SPECIAL_DEALS = [
+      { id: 'dl1', cat: 'deals', name: 'Zinger & Fries Combo', price: 800, desc: 'Chicken Zinger Burger + Plain Fries + Soft Drink 345 ml.', icon: '🍔' },
+      { id: 'dl2', cat: 'deals', name: 'Karachi Biryani Feast', price: 650, desc: 'Chicken Biryani Single + Seekh Kabab + Small Raita.', icon: '🍛' },
+      { id: 'dl3', cat: 'deals', name: 'BBQ Tikka & Naan Box', price: 880, desc: 'Chk. Tikka Leg + 2 Garlic Naan + Soft Drink 500 ml.', icon: '🔥' },
+      { id: 'dl4', cat: 'deals', name: 'Sweet Faluda & Scoop Duo', price: 650, desc: 'Rabri Faluda + Double Scoop Ice Cream of choice.', icon: '🍨' },
+    ];
+
+    // =========================================================================
+    // 2. APP STATE & PERSISTENCE
+    // =========================================================================
+    let activeCategory = 'ALL';
+    let searchQuery = '';
+    let cart = JSON.parse(localStorage.getItem('sp_kitchen_cart') || '[]');
+    let whatsappNumber = localStorage.getItem('sp_wa_number') || '923003482732';
+
+    // Product Modal State
+    let currentModalItem = null;
+    let currentModalVariant = null;
+    let currentModalQty = 1;
+
+    document.getElementById('wa-number-input').value = whatsappNumber;
+    document.getElementById('total-dishes-count').textContent = MENU_ITEMS.length + SPECIAL_DEALS.length;
+
+    // Live Clock
+    function updateClock() {
+      const now = new Date();
+      let h = now.getHours();
+      let m = now.getMinutes().toString().padStart(2, '0');
+      h = h % 12 || 12;
+      document.getElementById('live-clock').textContent = `${h}:${m}`;
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+
+    // =========================================================================
+    // 3. RENDERING FUNCTIONS
+    // =========================================================================
+    function renderCategoryPillsAndWidgets() {
+      const pillsEl = document.getElementById('category-pills');
+      const widgetsEl = document.getElementById('category-widgets');
+
+      let pillsHTML = `
+        <button onclick="filterByCategory('ALL')" data-pill="ALL"
+          class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${activeCategory === 'ALL' ? 'bg-gray-900 text-white shadow-sm' : 'bg-white text-gray-700 border border-gray-200/70'}">
+          ✨ All Menu
+        </button>
+      `;
+
+      let widgetsHTML = '';
+
+      CATEGORY_META.forEach(cat => {
+        const count = MENU_ITEMS.filter(i => i.cat === cat.id).length;
+        const isActive = activeCategory === cat.id;
+
+        pillsHTML += `
+          <button onclick="filterByCategory('${cat.id}')" data-pill="${cat.id}"
+            class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${isActive ? 'bg-red-600 text-white shadow-sm' : 'bg-white text-gray-700 border border-gray-200/70 hover:bg-gray-50'}">
+            <span>${cat.icon}</span>
+            <span>${cat.name}</span>
+          </button>
+        `;
+
+        widgetsHTML += `
+          <button onclick="jumpToCategory('${cat.id}')" class="ios-card p-3 flex flex-col items-center justify-center text-center gap-1.5 hover:border-red-200">
+            <div class="w-10 h-10 rounded-[13px] bg-gradient-to-br ${cat.gradient} flex items-center justify-center text-xl shadow-sm">
+              ${cat.icon}
+            </div>
+            <span class="text-[11px] font-bold text-gray-800 leading-tight line-clamp-1">${cat.name}</span>
+            <span class="text-[10px] text-gray-400 font-medium">${count} items</span>
+          </button>
+        `;
+      });
+
+      pillsEl.innerHTML = pillsHTML;
+      widgetsEl.innerHTML = widgetsHTML;
+    }
+
+    function renderDealsSection() {
+      const grid = document.getElementById('deals-grid');
+      grid.innerHTML = SPECIAL_DEALS.map(deal => `
+        <div onclick="openProductModal('${deal.id}')" class="ios-card p-4 cursor-pointer flex flex-col justify-between gap-3 border-amber-200/60 bg-gradient-to-br from-white to-amber-50/40">
+          <div class="flex items-start justify-between gap-3">
+            <div class="space-y-1">
+              <span class="inline-block text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Chef's Combo</span>
+              <h3 class="text-base font-bold text-gray-900 leading-snug">${deal.name}</h3>
+              <p class="text-xs text-gray-500 line-clamp-2">${deal.desc}</p>
+            </div>
+            <div class="w-12 h-12 rounded-[15px] bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center text-2xl shrink-0 shadow-sm">
+              ${deal.icon}
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+            <span class="text-base font-extrabold text-red-600">Rs. ${deal.price}</span>
+            <span class="text-xs font-bold text-gray-900 bg-gray-100 px-3 py-1.5 rounded-full">View &amp; Buy →</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function formatPriceLabel(item) {
+      if (item.variants && item.variants.length > 0) {
+        const prices = item.variants.map(v => v.price);
+        return `Rs. ${Math.min(...prices)} – ${Math.max(...prices)}`;
+      }
+      if (item.price === null || item.price === undefined) {
+        return 'Confirm on WhatsApp';
+      }
+      return `Rs. ${item.price}`;
+    }
+
+    function renderMenuSections() {
+      const container = document.getElementById('menu-sections');
+      const emptyState = document.getElementById('empty-search-state');
+      const q = searchQuery.trim().toLowerCase();
+
+      let html = '';
+      let totalMatched = 0;
+
+      CATEGORY_META.forEach(cat => {
+        if (activeCategory !== 'ALL' && activeCategory !== cat.id) return;
+
+        const items = MENU_ITEMS.filter(item => {
+          if (item.cat !== cat.id) return false;
+          if (!q) return true;
+          return item.name.toLowerCase().includes(q) || cat.name.toLowerCase().includes(q) || (item.desc && item.desc.toLowerCase().includes(q));
+        });
+
+        if (items.length === 0) return;
+        totalMatched += items.length;
+
+        html += `
+          <div id="cat-${cat.id}" class="menu-section-block space-y-3.5 scroll-mt-40">
+            <!-- Bold Category Header -->
+            <div class="flex items-center justify-between border-b border-gray-200/80 pb-2.5">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-[14px] bg-gradient-to-br ${cat.gradient} flex items-center justify-center text-xl shadow-sm">
+                  ${cat.icon}
+                </div>
+                <div>
+                  <h2 class="text-lg sm:text-xl font-extrabold tracking-tight text-gray-900">${cat.name}</h2>
+                  <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">${cat.badge} • ${items.length} Options</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Responsive Product Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              ${items.map(item => `
+                <div onclick="openProductModal('${item.id}')" class="ios-card p-3.5 cursor-pointer flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-12 h-12 rounded-[15px] bg-gradient-to-br ${cat.gradient} flex items-center justify-center text-2xl shrink-0 shadow-sm text-white">
+                      ${cat.icon}
+                    </div>
+                    <div class="min-w-0">
+                      <h3 class="text-sm font-bold text-gray-900 truncate">${item.name}</h3>
+                      <p class="text-xs font-extrabold ${item.price === null ? 'text-emerald-600' : 'text-red-600'} mt-0.5">
+                        ${formatPriceLabel(item)}
+                      </p>
+                      ${item.variants ? `<p class="text-[10px] text-gray-400 font-medium">${item.variants.map(v => v.label).join(' / ')}</p>` : ''}
+                      ${item.desc ? `<p class="text-[11px] text-gray-500 line-clamp-1 mt-0.5">${item.desc}</p>` : ''}
+                    </div>
+                  </div>
+                  <button onclick="event.stopPropagation(); quickAddItem('${item.id}')" aria-label="Add ${item.name}"
+                    class="ios-btn shrink-0 w-9 h-9 rounded-full bg-gray-100 hover:bg-red-600 hover:text-white text-gray-900 font-bold text-lg flex items-center justify-center transition-colors">
+                    +
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      if (totalMatched === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+    }
+
+    // =========================================================================
+    // 4. FILTERING & SEARCH
+    // =========================================================================
+    function filterByCategory(catId) {
+      activeCategory = catId;
+      renderCategoryPillsAndWidgets();
+      renderMenuSections();
+    }
+
+    function jumpToCategory(catId) {
+      activeCategory = 'ALL';
+      renderCategoryPillsAndWidgets();
+      renderMenuSections();
+      setTimeout(() => {
+        const el = document.getElementById(`cat-${catId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+    }
+
+    const searchInput = document.getElementById('search-input');
+    const clearBtn = document.getElementById('clear-search');
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      clearBtn.classList.toggle('hidden', !searchQuery);
+      if (searchQuery && activeCategory !== 'ALL') {
+        activeCategory = 'ALL';
+        renderCategoryPillsAndWidgets();
+      }
+      renderMenuSections();
+    });
+
+    function clearSearch() {
+      searchQuery = '';
+      searchInput.value = '';
+      clearBtn.classList.add('hidden');
+      renderMenuSections();
+    }
+
+    // =========================================================================
+    // 5. PRODUCT DETAIL PAGE (MODAL)
+    // =========================================================================
+    function findItemById(id) {
+      return MENU_ITEMS.find(i => i.id === id) || SPECIAL_DEALS.find(d => d.id === id);
+    }
+
+    function getCategoryMeta(catId) {
+      if (catId === 'deals') {
+        return { name: "CHEF'S COMBOS", icon: '🔥', gradient: 'from-amber-500 to-red-600' };
+      }
+      return CATEGORY_META.find(c => c.id === catId) || CATEGORY_META[0];
+    }
+
+    function openProductModal(id) {
+      const item = findItemById(id);
+      if (!item) return;
+
+      currentModalItem = item;
+      currentModalQty = 1;
+      currentModalVariant = item.variants ? item.variants[0] : null;
+
+      const meta = getCategoryMeta(item.cat);
+      document.getElementById('pm-category-badge').textContent = meta.name;
+      document.getElementById('pm-title').textContent = item.name;
+      document.getElementById('pm-emoji').textContent = item.icon || meta.icon;
+      document.getElementById('pm-banner').className = `mx-5 mt-4 rounded-[22px] p-6 text-white flex items-center justify-between shadow-inner bg-gradient-to-br ${meta.gradient}`;
+      document.getElementById('pm-desc').textContent = item.desc || `Freshly prepared ${item.name} from our ${meta.name} kitchen. Available for takeaway & home delivery.`;
+      document.getElementById('pm-notes').value = '';
+      document.getElementById('pm-qty').textContent = '1';
+
+      // Variants UI
+      const variantsWrap = document.getElementById('pm-variants-wrap');
+      const variantsGrid = document.getElementById('pm-variants');
+
+      if (item.variants && item.variants.length > 0) {
+        variantsWrap.classList.remove('hidden');
+        renderModalVariants();
+      } else {
+        variantsWrap.classList.add('hidden');
+        variantsGrid.innerHTML = '';
+      }
+
+      updateModalPricing();
+
+      const modal = document.getElementById('product-modal');
+      const card = document.getElementById('product-modal-card');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+
+      gsap.fromTo(card, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.28, ease: 'power3.out' });
+    }
+
+    function renderModalVariants() {
+      const variantsGrid = document.getElementById('pm-variants');
+      variantsGrid.innerHTML = currentModalItem.variants.map((v, idx) => {
+        const selected = currentModalVariant && currentModalVariant.label === v.label;
+        return `
+          <button onclick="selectModalVariant(${idx})"
+            class="p-2.5 rounded-[14px] border text-left transition-all ${selected ? 'border-red-600 bg-red-50 text-red-700' : 'border-gray-200 bg-white text-gray-800'}">
+            <div class="text-xs font-bold">${v.label}</div>
+            <div class="text-[11px] font-semibold opacity-80">Rs. ${v.price}</div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectModalVariant(idx) {
+      currentModalVariant = currentModalItem.variants[idx];
+      renderModalVariants();
+      updateModalPricing();
+    }
+
+    function changeModalQty(delta) {
+      currentModalQty = Math.max(1, currentModalQty + delta);
+      document.getElementById('pm-qty').textContent = currentModalQty;
+      updateModalPricing();
+    }
+
+    function updateModalPricing() {
+      const unitPrice = currentModalVariant ? currentModalVariant.price : currentModalItem.price;
+      const priceDisplay = document.getElementById('pm-price-display');
+      const addTotal = document.getElementById('pm-add-total');
+
+      if (unitPrice === null || unitPrice === undefined) {
+        priceDisplay.textContent = 'Rate Confirmed on WhatsApp';
+        addTotal.textContent = '';
+      } else {
+        priceDisplay.textContent = `Rs. ${unitPrice}`;
+        addTotal.textContent = `(Rs. ${unitPrice * currentModalQty})`;
+      }
+    }
+
+    function closeProductModal() {
+      const modal = document.getElementById('product-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('product-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'product-modal') closeProductModal();
+    });
+
+    // =========================================================================
+    // 6. CART ENGINE & WHATSAPP CHECKOUT
+    // =========================================================================
+    function quickAddItem(id) {
+      const item = findItemById(id);
+      if (!item) return;
+
+      if (item.variants && item.variants.length > 0) {
+        openProductModal(id);
+        return;
+      }
+
+      addToCart({
+        id: item.id,
+        name: item.name,
+        variant: null,
+        price: item.price,
+        qty: 1,
+        notes: ''
+      });
+    }
+
+    function addModalItemToCart() {
+      if (!currentModalItem) return;
+      const unitPrice = currentModalVariant ? currentModalVariant.price : currentModalItem.price;
+      const notes = document.getElementById('pm-notes').value.trim();
+
+      addToCart({
+        id: currentModalItem.id,
+        name: currentModalItem.name,
+        variant: currentModalVariant ? currentModalVariant.label : null,
+        price: unitPrice,
+        qty: currentModalQty,
+        notes
+      });
+      closeProductModal();
+    }
+
+    function addToCart(entry) {
+      const existing = cart.find(c => c.id === entry.id && c.variant === entry.variant && c.notes === entry.notes);
+      if (existing) {
+        existing.qty += entry.qty;
+      } else {
+        cart.push(entry);
+      }
+      saveAndRefreshCart();
+      showToast(`Added ${entry.name} to bag`);
+      pulseDynamicIsland();
+    }
+
+    function updateCartQty(index, delta) {
+      cart[index].qty += delta;
+      if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
+      }
+      saveAndRefreshCart();
+      renderCartItems();
+    }
+
+    function clearCart() {
+      cart = [];
+      saveAndRefreshCart();
+      renderCartItems();
+    }
+
+    function saveAndRefreshCart() {
+      localStorage.setItem('sp_kitchen_cart', JSON.stringify(cart));
+      const totalCount = cart.reduce((sum, i) => sum + i.qty, 0);
+      document.getElementById('cart-badge-mobile').textContent = totalCount;
+      document.getElementById('cart-badge-desktop').textContent = totalCount;
+      document.getElementById('cart-badge-dock').textContent = totalCount;
+
+      const islandText = document.getElementById('island-text');
+      if (totalCount > 0) {
+        islandText.textContent = `${totalCount} item${totalCount > 1 ? 's' : ''} in Bag • Tap to Order`;
+      } else {
+        islandText.textContent = 'Open • Delivery Active';
+      }
+    }
+
+    function pulseDynamicIsland() {
+      const island = document.getElementById('dynamic-island');
+      gsap.fromTo(island, { scale: 1 }, { scale: 1.08, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' });
+    }
+
+    function openCartSheet() {
+      renderCartItems();
+      const modal = document.getElementById('cart-modal');
+      const card = document.getElementById('cart-modal-card');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+      gsap.fromTo(card, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.25, ease: 'power3.out' });
+    }
+
+    function closeCartSheet() {
+      const modal = document.getElementById('cart-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('cart-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'cart-modal') closeCartSheet();
+    });
+
+    function renderCartItems() {
+      const list = document.getElementById('cart-items-list');
+      const totalEl = document.getElementById('cart-total-price');
+      const rateNote = document.getElementById('cart-rate-note');
+
+      if (cart.length === 0) {
+        list.innerHTML = `
+          <div class="bg-white rounded-[20px] p-8 text-center space-y-2 border border-gray-100">
+            <div class="text-4xl">🛍️</div>
+            <h4 class="font-bold text-gray-900">Your order bag is empty</h4>
+            <p class="text-xs text-gray-500">Tap any dish from the menu to add it here.</p>
+          </div>
+        `;
+        totalEl.textContent = 'Rs. 0';
+        rateNote.classList.add('hidden');
+        return;
+      }
+
+      let total = 0;
+      let hasUnpriced = false;
+
+      list.innerHTML = cart.map((item, idx) => {
+        if (item.price !== null && item.price !== undefined) {
+          total += item.price * item.qty;
+        } else {
+          hasUnpriced = true;
+        }
+        return `
+          <div class="bg-white rounded-[18px] p-3.5 flex items-center justify-between gap-3 border border-gray-100">
+            <div class="min-w-0">
+              <h4 class="text-sm font-bold text-gray-900 truncate">${item.name}</h4>
+              <p class="text-[11px] text-gray-500">
+                ${item.variant ? `<span class="font-semibold text-gray-700">${item.variant}</span> • ` : ''}
+                ${item.price !== null ? `Rs. ${item.price} each` : 'Rate confirmed on WhatsApp'}
+              </p>
+              ${item.notes ? `<p class="text-[11px] text-amber-600 italic mt-0.5">"${item.notes}"</p>` : ''}
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="updateCartQty(${idx}, -1)" class="w-7 h-7 rounded-full bg-gray-100 font-bold text-sm flex items-center justify-center">−</button>
+              <span class="text-xs font-extrabold w-4 text-center">${item.qty}</span>
+              <button onclick="updateCartQty(${idx}, 1)" class="w-7 h-7 rounded-full bg-gray-900 text-white font-bold text-sm flex items-center justify-center">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      totalEl.textContent = `Rs. ${total}${hasUnpriced ? ' +' : ''}`;
+      rateNote.classList.toggle('hidden', !hasUnpriced);
+    }
+
+    // Direct Buy from Product Page
+    function buyModalItemOnWhatsApp() {
+      if (!currentModalItem) return;
+      const unitPrice = currentModalVariant ? currentModalVariant.price : currentModalItem.price;
+      const notes = document.getElementById('pm-notes').value.trim();
+
+      let msg = `*NEW ORDER — SULEMAN PLAZA KITCHEN*%0A`;
+      msg += `📍 Gulshan-e-Iqbal Block-10%0A%0A`;
+      msg += `• *${currentModalQty}x ${currentModalItem.name}*`;
+      if (currentModalVariant) msg += ` (${currentModalVariant.label})`;
+      msg += unitPrice !== null ? ` — Rs. ${unitPrice * currentModalQty}%0A` : ` — Confirm Rate%0A`;
+      if (notes) msg += `📝 Note: ${encodeURIComponent(notes)}%0A`;
+      msg += `%0APlease confirm my order for delivery/pickup.`;
+
+      triggerConfetti();
+      openWhatsAppURL(msg);
+    }
+
+    // Full Cart Checkout via WhatsApp
+    function checkoutViaWhatsApp() {
+      if (cart.length === 0) {
+        showToast('Please add items to your bag first', '⚠️');
+        return;
+      }
+
+      const custName = document.getElementById('cust-name').value.trim();
+      const custPhone = document.getElementById('cust-phone').value.trim();
+      const custAddr = document.getElementById('cust-address').value.trim();
+
+      let total = 0;
+      let hasUnpriced = false;
+
+      let lines = `*NEW ORDER — SULEMAN PLAZA KITCHEN*%0A`;
+      lines += `────────────────────%0A`;
+
+      cart.forEach((item, idx) => {
+        const variantStr = item.variant ? ` (${item.variant})` : '';
+        let priceStr = 'Confirm Rate';
+        if (item.price !== null && item.price !== undefined) {
+          const lineTotal = item.price * item.qty;
+          total += lineTotal;
+          priceStr = `Rs. ${lineTotal}`;
+        } else {
+          hasUnpriced = true;
+        }
+        lines += `${idx + 1}. *${item.qty}x ${encodeURIComponent(item.name + variantStr)}* — ${priceStr}%0A`;
+        if (item.notes) {
+          lines += `   ↳ _Note: ${encodeURIComponent(item.notes)}_%0A`;
+        }
+      });
+
+      lines += `────────────────────%0A`;
+      lines += `*Total:* Rs. ${total}${hasUnpriced ? ' + unpriced items' : ''}%0A%0A`;
+
+      if (custName || custPhone || custAddr) {
+        lines += `*Customer Details:*%0A`;
+        if (custName) lines += `👤 Name: ${encodeURIComponent(custName)}%0A`;
+        if (custPhone) lines += `📱 Phone: ${encodeURIComponent(custPhone)}%0A`;
+        if (custAddr) lines += `📍 Address: ${encodeURIComponent(custAddr)}%0A`;
+      } else {
+        lines += `📍 Please share delivery details in reply.`;
+      }
+
+      triggerConfetti();
+      openWhatsAppURL(lines);
+    }
+
+    function quickWhatsAppInquiry() {
+      const msg = encodeURIComponent('Assalam-o-Alaikum! I would like to place an order from Suleman Plaza Kitchen.');
+      openWhatsAppURL(msg);
+    }
+
+    function openWhatsAppURL(encodedMessage) {
+      const cleanNum = whatsappNumber.replace(/[^0-9]/g, '') || '923003482732';
+      const url = `https://wa.me/${cleanNum}?text=${encodedMessage}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function saveWhatsAppNumber() {
+      const val = document.getElementById('wa-number-input').value.replace(/[^0-9]/g, '');
+      if (val.length < 10) {
+        showToast('Enter a valid WhatsApp number', '⚠️');
+        return;
+      }
+      whatsappNumber = val;
+      localStorage.setItem('sp_wa_number', val);
+      showToast('WhatsApp recipient updated!', '💬');
+    }
+
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 70,
+          spread: 65,
+          origin: { y: 0.7 }
+        });
+      }
+    }
+
+    let toastTimer;
+    function showToast(message, icon = '✅') {
+      const toast = document.getElementById('ios-toast');
+      document.getElementById('toast-msg').textContent = message;
+      document.getElementById('toast-icon').textContent = icon;
+      toast.classList.remove('opacity-0', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }, 2200);
+    }
+
+    // =========================================================================
+    // 7. THREE.JS LIGHTWEIGHT 3D CULINARY CENTERPIECE (HERO)
+    // =========================================================================
+    function initHeroThreeJS() {
+      const canvas = document.getElementById('hero-three-canvas');
+      if (!canvas || typeof THREE === 'undefined') return;
+
+      const parent = canvas.parentElement;
+      const scene = new THREE.Scene();
+
+      const camera = new THREE.PerspectiveCamera(45, parent.clientWidth / parent.clientHeight, 0.1, 100);
+      camera.position.set(0, 1.3, 5.2);
+
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      renderer.setSize(parent.clientWidth, parent.clientHeight);
+
+      // Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.75);
+      scene.add(ambient);
+
+      const keyLight = new THREE.DirectionalLight(0xffd27d, 1.4);
+      keyLight.position.set(4, 6, 4);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.PointLight(0xff4d4d, 1.5, 12);
+      rimLight.position.set(-3, 2, -2);
+      scene.add(rimLight);
+
+      // Main 3D Group: Stylized Golden Serving Platter + Cloche Dome + Spice Orbiters
+      const group = new THREE.Group();
+      scene.add(group);
+
+      // Serving Plate Base
+      const plateGeo = new THREE.CylinderGeometry(1.55, 1.35, 0.14, 40);
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xffc857,
+        metalness: 0.72,
+        roughness: 0.22
+      });
+      const plate = new THREE.Mesh(plateGeo, goldMat);
+      plate.position.y = -0.35;
+      group.add(plate);
+
+      // Inner Crimson Dish Ring
+      const innerGeo = new THREE.TorusGeometry(1.05, 0.1, 16, 48);
+      const crimsonMat = new THREE.MeshStandardMaterial({
+        color: 0xff3b30,
+        metalness: 0.4,
+        roughness: 0.3
+      });
+      const ring = new THREE.Mesh(innerGeo, crimsonMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = -0.22;
+      group.add(ring);
+
+      // Stylized Cloche Dome / Culinary Gem
+      const domeGeo = new THREE.SphereGeometry(1.05, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2);
+      const domeMat = new THREE.MeshStandardMaterial({
+        color: 0xfff5e4,
+        metalness: 0.65,
+        roughness: 0.18
+      });
+      const dome = new THREE.Mesh(domeGeo, domeMat);
+      dome.position.y = -0.25;
+      group.add(dome);
+
+      // Top Handle Knob
+      const knobGeo = new THREE.SphereGeometry(0.16, 20, 20);
+      const knob = new THREE.Mesh(knobGeo, goldMat);
+      knob.position.y = 0.85;
+      group.add(knob);
+
+      // Floating Spice / Flavor Particles Orbiting
+      const particlesGroup = new THREE.Group();
+      const sphereGeo = new THREE.IcosahedronGeometry(0.11, 0);
+      const particleColors = [0xffcc00, 0xff5e3a, 0x25d366, 0xffffff];
+
+      for (let i = 0; i < 14; i++) {
+        const mat = new THREE.MeshStandardMaterial({
+          color: particleColors[i % particleColors.length],
+          roughness: 0.3,
+          metalness: 0.3
+        });
+        const mesh = new THREE.Mesh(sphereGeo, mat);
+        const angle = (i / 14) * Math.PI * 2;
+        const radius = 1.7 + (i % 3) * 0.28;
+        mesh.position.set(Math.cos(angle) * radius, ((i % 5) - 2) * 0.25, Math.sin(angle) * radius);
+        mesh.userData = { baseY: mesh.position.y, speed: 0.8 + (i % 3) * 0.4, offset: i };
+        particlesGroup.add(mesh);
+      }
+      group.add(particlesGroup);
+
+      // Interactive Pointer Tilt
+      let targetRotX = 0.15;
+      let targetRotY = 0;
+
+      parent.addEventListener('pointermove', (e) => {
+        const rect = parent.getBoundingClientRect();
+        const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+        targetRotY = nx * 0.65;
+        targetRotX = 0.15 + ny * 0.25;
+      });
+
+      // Resize Handler
+      window.addEventListener('resize', () => {
+        if (!parent.clientWidth || !parent.clientHeight) return;
+        camera.aspect = parent.clientWidth / parent.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(parent.clientWidth, parent.clientHeight);
+      });
+
+      // Smooth Animation Loop
+      const clock = new THREE.Clock();
+      function animate() {
+        requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+
+        group.rotation.y += (targetRotY + t * 0.25 - group.rotation.y) * 0.04;
+        group.rotation.x += (targetRotX - group.rotation.x) * 0.05;
+        group.position.y = Math.sin(t * 1.5) * 0.08;
+
+        particlesGroup.children.forEach(p => {
+          p.position.y = p.userData.baseY + Math.sin(t * p.userData.speed + p.userData.offset) * 0.14;
+          p.rotation.x += 0.01;
+          p.rotation.y += 0.015;
+        });
+
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    // =========================================================================
+    // 8. INITIALIZE APP + LIGHTWEIGHT GSAP ENTRANCE
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCategoryPillsAndWidgets();
+      renderDealsSection();
+      renderMenuSections();
+      saveAndRefreshCart();
+      initHeroThreeJS();
+
+      // Smooth, lightweight GSAP entrance
+      if (typeof gsap !== 'undefined') {
+        gsap.from('#hero-section', {
+          y: 18,
+          opacity: 0,
+          duration: 0.55,
+          ease: 'power2.out'
+        });
+      }
+    });
+  </script>
+</body>
+</html>
